@@ -19,11 +19,11 @@ final class QuestionListViewModel: ObservableObject {
 
     var filteredQuestions: [InterviewQuestion] {
         questions.filter { question in
-            let matchesSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || question.searchableText.contains(searchText.lowercased())
-            let matchesCategory = selectedCategory == nil || question.category == selectedCategory
-            let matchesDifficulty = selectedDifficulty == nil || question.difficulty == selectedDifficulty
-            let matchesFavorites = !showingFavoritesOnly || question.isFavorite
-            return matchesSearch && matchesCategory && matchesDifficulty && matchesFavorites
+            let normalizedSearch = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            return (normalizedSearch.isEmpty || question.searchableText.contains(normalizedSearch))
+                && (selectedCategory == nil || question.category == selectedCategory)
+                && (selectedDifficulty == nil || question.difficulty == selectedDifficulty)
+                && (!showingFavoritesOnly || question.isFavorite)
         }
     }
 
@@ -39,11 +39,9 @@ final class QuestionListViewModel: ObservableObject {
         isLoading = questions.isEmpty
         errorMessage = nil
         defer { isLoading = false }
-        do {
-            questions = try await repository.refreshQuestions()
-        } catch is CancellationError {
-            return
-        } catch {
+        do { questions = try await repository.refreshQuestions() }
+        catch is CancellationError { return }
+        catch {
             errorMessage = "No se pudo actualizar. Se muestran los datos guardados."
             logger.error("Refresh failed: \\(error.localizedDescription, privacy: .public)")
         }
@@ -55,8 +53,8 @@ final class QuestionListViewModel: ObservableObject {
             if let index = questions.firstIndex(where: { $0.id == question.id }) {
                 questions[index].isFavorite.toggle()
             }
-        } catch {
-            errorMessage = "No se pudo guardar el favorito."
-        }
+        } catch { errorMessage = "No se pudo guardar el favorito." }
     }
+
+    func dismissError() { errorMessage = nil }
 }

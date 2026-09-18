@@ -17,9 +17,7 @@ struct QuestionListView: View {
                 } else {
                     List(viewModel.filteredQuestions) { question in
                         NavigationLink(value: question.id) {
-                            QuestionRow(question: question) {
-                                Task { await viewModel.toggleFavorite(question) }
-                            }
+                            QuestionRow(question: question) { Task { await viewModel.toggleFavorite(question) } }
                         }
                     }
                     .listStyle(.insetGrouped)
@@ -29,9 +27,7 @@ struct QuestionListView: View {
             .navigationTitle("Interview Prep")
             .navigationDestination(for: UUID.self) { id in
                 if let question = viewModel.questions.first(where: { $0.id == id }) {
-                    QuestionDetailView(question: question) {
-                        Task { await viewModel.toggleFavorite(question) }
-                    }
+                    QuestionDetailView(question: question) { Task { await viewModel.toggleFavorite(question) } }
                 }
             }
             .searchable(text: $viewModel.searchText, prompt: "Buscar preguntas")
@@ -52,8 +48,8 @@ struct QuestionListView: View {
             }
         }
         .task { await viewModel.load() }
-        .alert("Aviso", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+        .alert("Aviso", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.dismissError() } })) {
+            Button("OK", role: .cancel) { viewModel.dismissError() }
         } message: { Text(viewModel.errorMessage ?? "") }
     }
 }

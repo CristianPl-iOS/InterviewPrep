@@ -14,7 +14,7 @@ actor QuestionLocalStore {
 
     private func prepareIfNeeded() async throws {
         guard !isLoaded else { return }
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             container.loadPersistentStores { _, error in
                 if let error { continuation.resume(throwing: error) }
                 else { continuation.resume() }
@@ -40,10 +40,10 @@ actor QuestionLocalStore {
             let request = NSFetchRequest<NSManagedObject>(entityName: "QuestionEntity")
             let existing = try context.fetch(request)
             let byID = Dictionary(uniqueKeysWithValues: existing.compactMap { object -> (UUID, NSManagedObject)? in
-                guard let rawID = object.value(forKey: "id") as? String, let id = UUID(uuidString: rawID) else { return nil }
+                guard let rawID = object.value(forKey: "id") as? String,
+                      let id = UUID(uuidString: rawID) else { return nil }
                 return (id, object)
             })
-
             for question in questions {
                 let object = byID[question.id] ?? NSEntityDescription.insertNewObject(forEntityName: "QuestionEntity", into: context)
                 object.setValue(question.id.uuidString, forKey: "id")
@@ -83,7 +83,6 @@ actor QuestionLocalStore {
             let difficultyRaw = object.value(forKey: "difficulty") as? String,
             let difficulty = Difficulty(rawValue: difficultyRaw)
         else { return nil }
-
         let tags = (object.value(forKey: "tags") as? String ?? "").split(separator: "|").map(String.init)
         return InterviewQuestion(id: id, title: title, answer: answer, category: category, difficulty: difficulty, tags: tags, isFavorite: object.value(forKey: "isFavorite") as? Bool ?? false)
     }
